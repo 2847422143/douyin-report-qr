@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 function buildReportDeepLink(objectId, objectType = "video", secOwnerId = "") {
   const reportMortiseId = "9879902d-907f-46f3-85e0-678c416f366a";
@@ -59,5 +60,11 @@ assert.equal(new URL(bridgeUrl).searchParams.get("open_report"), buildReportDeep
 const bridgePayload = buildQrPayload("7639583721263374026", "video", "weibo-bridge", "MS4wLjABAAAArdo4ql4bGt7Wfdyvr1N_qtKw5ad0coSlSGuXznCaPjE");
 assert.match(bridgePayload, /^https:\/\/douyin-report-qr\.edgeone\.dev\/\?open_report=/);
 assert.equal(new URL(bridgePayload).searchParams.get("open_report"), buildReportDeepLink("7639583721263374026", "video", "MS4wLjABAAAArdo4ql4bGt7Wfdyvr1N_qtKw5ad0coSlSGuXznCaPjE"));
+const html = readFileSync("index.html", "utf8");
+assert.doesNotMatch(html, /微博直跳举报页/);
+assert.doesNotMatch(html, /微博扫码后尽量直接唤起抖音举报界面/);
+assert.match(html, /微博中间页举报二维码/);
+assert.match(html, /暂不可用/);
+assert.match(html, /name="qrMode" value="weibo-bridge" disabled/);
 
 console.log("deeplink core tests passed");

@@ -125,7 +125,7 @@
 
     .mode-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
       margin-top: 14px;
     }
@@ -162,6 +162,12 @@
       border-color: var(--primary);
       background: #eefaf8;
       box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+    }
+
+    .mode-option:has(input:disabled) {
+      cursor: not-allowed;
+      opacity: 0.55;
+      background: #f6f7f9;
     }
 
     button,
@@ -381,14 +387,9 @@
             <small>扫码后打开抖音举报界面</small>
           </label>
           <label class="mode-option">
-            <input type="radio" name="qrMode" value="weibo-jump">
-            <span>微博直跳举报页</span>
-            <small>微博扫码后尽量直接唤起抖音举报界面</small>
-          </label>
-          <label class="mode-option">
-            <input type="radio" name="qrMode" value="weibo-bridge">
-            <span>微博中间页举报二维码</span>
-            <small>先打开网页，再点击按钮唤起抖音举报页</small>
+            <input type="radio" name="qrMode" value="weibo-bridge" disabled>
+            <span>微博中间页举报二维码（暂不可用）</span>
+            <small>微博内跳转验证未通过，暂不开放生成</small>
           </label>
         </div>
 
@@ -403,7 +404,7 @@
         <p id="error" class="error"></p>
 
         <div class="hint">
-          微博中间页模式会生成普通 HTTPS 链接，扫码后先进入本工具页面，再由按钮唤起抖音举报页；外部应用跳转仍由微博客户端决定。
+          微博中间页模式目前验证不可用，暂不开放生成。请先使用举报页面二维码，或用系统相机、抖音扫码测试。
         </div>
 
         <div class="meta">
@@ -2771,6 +2772,10 @@ var qrcode = function() {
 
     async function generate() {
       clearStatus();
+      if (getQrMode() === "weibo-bridge") {
+        showError("微博中间页举报二维码暂不可用。");
+        return;
+      }
       let object = extractObject(sourceEl.value);
       let resolvedUrl = "";
       if (!object) {
@@ -2818,7 +2823,6 @@ var qrcode = function() {
       copyBtn.disabled = false;
       const modeMessage = {
         report: "已生成举报页面二维码。扫码后仍需要手动选择举报理由并提交。",
-        "weibo-jump": "已生成微博直跳举报页二维码。微博是否直接放行跳转取决于微博客户端。",
         "weibo-bridge": "已生成微博中间页举报二维码。扫码后先打开网页，再点击按钮唤起抖音举报页。",
       }[mode] || "已生成举报页面二维码。扫码后仍需要手动选择举报理由并提交。";
       const ownerMessage = secOwnerId ? "已带入作者加密 ID。" : "未拿到作者加密 ID，若无法打开举报页，请粘贴抖音分享短链重新生成。";
