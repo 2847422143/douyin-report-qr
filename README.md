@@ -26,18 +26,14 @@ https://pages.edgeone.ai/
 
 ```text
 Framework Preset: Other
-Build Command: npm test
+Build Command: 留空
 Output Directory: .
 Root Directory: /
 ```
 
-如果页面要求“安装命令”，填：
+如果页面要求“安装命令”，也留空。
 
-```text
-npm install
-```
-
-如果不想部署时跑测试，也可以把 Build Command 留空。
+这个项目是静态首页加 Edge Functions，不需要构建步骤。
 
 5. 点击部署。部署完成后，EdgeOne Pages 会给一个公网 HTTPS 地址。
 
@@ -45,7 +41,8 @@ npm install
 
 ```text
 index.html                         EdgeOne Pages 首页
-cloud-functions/api/resolve.js      EdgeOne Pages 短链解析接口
+edge-functions/api/resolve.js       EdgeOne Pages 短链解析接口
+cloud-functions/api/resolve.js      Cloud Functions 兼容接口
 public/index.html                   Vercel 兼容首页
 api/resolve.js                      Vercel 兼容接口
 app/server.py                       本地 Python 服务器
