@@ -125,7 +125,7 @@
 
     .mode-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 10px;
       margin-top: 14px;
     }
@@ -304,6 +304,32 @@
       font-size: 13px;
     }
 
+    .bridge-panel {
+      width: min(520px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0;
+    }
+
+    .bridge-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .bridge-card p {
+      color: var(--muted);
+      line-height: 1.65;
+      margin: 0 0 16px;
+    }
+
+    .bridge-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
     @media (max-width: 840px) {
       main {
         width: min(100% - 22px, 680px);
@@ -359,6 +385,11 @@
             <span>微博直跳举报页</span>
             <small>微博扫码后尽量直接唤起抖音举报界面</small>
           </label>
+          <label class="mode-option">
+            <input type="radio" name="qrMode" value="weibo-bridge">
+            <span>微博中间页举报二维码</span>
+            <small>先打开网页，再点击按钮唤起抖音举报页</small>
+          </label>
         </div>
 
         <div class="row">
@@ -372,7 +403,7 @@
         <p id="error" class="error"></p>
 
         <div class="hint">
-          微博直跳举报页会生成抖音举报 WebView 深链。微博是否直接放行跳转由微博客户端决定；如果被拦截，请换系统相机或抖音扫码。
+          微博中间页模式会生成普通 HTTPS 链接，扫码后先进入本工具页面，再由按钮唤起抖音举报页；外部应用跳转仍由微博客户端决定。
         </div>
 
         <div class="meta">
@@ -2709,6 +2740,7 @@ var qrcode = function() {
   <script>
     const REPORT_MORTISE_ID = "9879902d-907f-46f3-85e0-678c416f366a";
     const REPORT_H5_BASE = `https://api.amemv.com/falcon/fe_douyin_security_react/mortise/${REPORT_MORTISE_ID}/`;
+    const PUBLIC_SITE_URL = "https://douyin-report-qr.edgeone.dev/";
 
     const sourceEl = document.querySelector("#source");
     const modeEls = document.querySelectorAll("input[name='qrMode']");
@@ -2722,6 +2754,8 @@ var qrcode = function() {
     const toast = document.querySelector("#toast");
     let currentSvg = "";
     let currentDeepLink = "";
+
+    initBridgePage();
 
     sourceEl.addEventListener("input", () => {
       const object = extractObject(sourceEl.value);
@@ -2782,9 +2816,11 @@ var qrcode = function() {
       downloadLink.download = `douyin-${mode}-${objectType}-${objectId}.svg`;
       downloadLink.removeAttribute("aria-disabled");
       copyBtn.disabled = false;
-      const modeMessage = mode === "weibo-jump"
-        ? "已生成微博直跳举报页二维码。微博是否直接放行跳转取决于微博客户端。"
-        : "已生成举报页面二维码。扫码后仍需要手动选择举报理由并提交。";
+      const modeMessage = {
+        report: "已生成举报页面二维码。扫码后仍需要手动选择举报理由并提交。",
+        "weibo-jump": "已生成微博直跳举报页二维码。微博是否直接放行跳转取决于微博客户端。",
+        "weibo-bridge": "已生成微博中间页举报二维码。扫码后先打开网页，再点击按钮唤起抖音举报页。",
+      }[mode] || "已生成举报页面二维码。扫码后仍需要手动选择举报理由并提交。";
       const ownerMessage = secOwnerId ? "已带入作者加密 ID。" : "未拿到作者加密 ID，若无法打开举报页，请粘贴抖音分享短链重新生成。";
       toast.textContent = resolvedUrl ? `${modeMessage} ${ownerMessage} 已解析：${resolvedUrl}` : `${modeMessage} ${ownerMessage}`;
     }
@@ -2863,9 +2899,53 @@ var qrcode = function() {
       return buildReportDeepLink(objectId, objectType, secOwnerId);
     }
 
+    function buildBridgeUrl(reportDeepLink, baseUrl = PUBLIC_SITE_URL) {
+      const url = new URL(baseUrl);
+      url.searchParams.set("open_report", reportDeepLink);
+      return url.toString();
+    }
+
     function buildQrPayload(objectId, objectType, mode, secOwnerId = "") {
       if (mode === "weibo-jump") return buildWeiboReportDeepLink(objectId, objectType, secOwnerId);
+      if (mode === "weibo-bridge") return buildBridgeUrl(buildReportDeepLink(objectId, objectType, secOwnerId));
       return buildReportDeepLink(objectId, objectType, secOwnerId);
+    }
+
+    function initBridgePage() {
+      const openReport = new URLSearchParams(window.location.search).get("open_report");
+      if (!openReport) return;
+      if (!/^snssdk1128:\/\/webview\?/.test(openReport)) return;
+      const safeOpenReport = escapeHtml(openReport);
+
+      document.body.innerHTML = `
+        <main class="bridge-panel">
+          <section class="bridge-card" aria-label="打开抖音举报页">
+            <h1>打开抖音举报页</h1>
+            <p>微博已打开中间页。请点击下面按钮继续跳转到抖音举报界面，进入后仍需要手动选择举报理由并提交。</p>
+            <div class="bridge-actions">
+              <a class="button" id="openReportBtn" href="${safeOpenReport}">打开抖音举报页</a>
+              <a class="button secondary" href="${PUBLIC_SITE_URL}">返回生成器</a>
+            </div>
+          </section>
+        </main>
+      `;
+      const openButton = document.querySelector("#openReportBtn");
+      openButton.addEventListener("click", () => {
+        window.location.href = openReport;
+      });
+      window.setTimeout(() => {
+        window.location.href = openReport;
+      }, 600);
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      }[char]));
     }
 
     function makeQrSvg(text) {

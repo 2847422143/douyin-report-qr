@@ -25,8 +25,20 @@ function buildReportDeepLink(objectId, objectType = "video", secOwnerId = "") {
   return `snssdk1128://webview?${params.map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join("&")}`;
 }
 
-function buildWeiboReportDeepLink(objectId, objectType = "video") {
-  return buildReportDeepLink(objectId, objectType);
+function buildWeiboReportDeepLink(objectId, objectType = "video", secOwnerId = "") {
+  return buildReportDeepLink(objectId, objectType, secOwnerId);
+}
+
+function buildBridgeUrl(reportDeepLink, baseUrl = "https://douyin-report-qr.edgeone.dev/") {
+  const url = new URL(baseUrl);
+  url.searchParams.set("open_report", reportDeepLink);
+  return url.toString();
+}
+
+function buildQrPayload(objectId, objectType, mode, secOwnerId = "") {
+  if (mode === "weibo-jump") return buildWeiboReportDeepLink(objectId, objectType, secOwnerId);
+  if (mode === "weibo-bridge") return buildBridgeUrl(buildReportDeepLink(objectId, objectType, secOwnerId));
+  return buildReportDeepLink(objectId, objectType, secOwnerId);
 }
 
 assert.match(
@@ -41,5 +53,11 @@ const weiboReportLink = buildWeiboReportDeepLink("7654816343196392294", "video")
 assert.match(weiboReportLink, /^snssdk1128:\/\/webview\?/);
 assert.match(weiboReportLink, /report_type%3Dvideo%26object_id%3D7654816343196392294/);
 assert.doesNotMatch(weiboReportLink, /aweme\/detail/);
+const bridgeUrl = buildBridgeUrl(buildReportDeepLink("7639583721263374026", "video", "MS4wLjABAAAArdo4ql4bGt7Wfdyvr1N_qtKw5ad0coSlSGuXznCaPjE"));
+assert.match(bridgeUrl, /^https:\/\/douyin-report-qr\.edgeone\.dev\/\?open_report=/);
+assert.equal(new URL(bridgeUrl).searchParams.get("open_report"), buildReportDeepLink("7639583721263374026", "video", "MS4wLjABAAAArdo4ql4bGt7Wfdyvr1N_qtKw5ad0coSlSGuXznCaPjE"));
+const bridgePayload = buildQrPayload("7639583721263374026", "video", "weibo-bridge", "MS4wLjABAAAArdo4ql4bGt7Wfdyvr1N_qtKw5ad0coSlSGuXznCaPjE");
+assert.match(bridgePayload, /^https:\/\/douyin-report-qr\.edgeone\.dev\/\?open_report=/);
+assert.equal(new URL(bridgePayload).searchParams.get("open_report"), buildReportDeepLink("7639583721263374026", "video", "MS4wLjABAAAArdo4ql4bGt7Wfdyvr1N_qtKw5ad0coSlSGuXznCaPjE"));
 
 console.log("deeplink core tests passed");
