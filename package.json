@@ -1,9 +1,9 @@
-﻿{
+{
   "name": "douyin-report-qr",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node test-vercel.mjs && node test-edgeone.mjs && node test-edge-functions.mjs && node test-deeplink-core.mjs"
+    "test": "node test-json-encoding.mjs && node test-vercel.mjs && node test-edgeone.mjs && node test-edge-functions.mjs && node test-deeplink-core.mjs"
   }
 }
