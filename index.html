@@ -123,6 +123,47 @@
       margin-top: 14px;
     }
 
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .mode-option {
+      position: relative;
+      display: grid;
+      gap: 4px;
+      min-height: 74px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .mode-option input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .mode-option span {
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .mode-option small {
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .mode-option:has(input:checked) {
+      border-color: var(--primary);
+      background: #eefaf8;
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+    }
+
     button,
     a.button {
       display: inline-flex;
@@ -272,6 +313,7 @@
       header,
       .shell,
       .row,
+      .mode-grid,
       .meta {
         grid-template-columns: 1fr;
         display: grid;
@@ -295,19 +337,33 @@
   <main>
     <header>
       <div>
-        <h1>抖音视频举报二维码生成器</h1>
-        <p class="subtle">本地单文件工具。输入完整视频链接或视频 ID，生成打开抖音举报界面的二维码。</p>
+        <h1>抖音二维码生成器</h1>
+        <p class="subtle">输入完整作品链接或作品 ID，生成举报页面二维码或微博直跳抖音二维码。</p>
       </div>
     </header>
 
     <div class="shell">
       <section aria-label="输入">
-        <label for="source">视频链接或视频 ID</label>
+        <label for="source">作品链接或作品 ID</label>
         <textarea id="source" spellcheck="false" placeholder="示例：https://www.douyin.com/video/7639583721263374026?previous_page=app_code_link&#10;也可以直接输入：7639583721263374026"></textarea>
+
+        <label style="margin-top: 14px;">二维码用途</label>
+        <div class="mode-grid" role="radiogroup" aria-label="二维码用途">
+          <label class="mode-option">
+            <input type="radio" name="qrMode" value="report" checked>
+            <span>举报页面二维码</span>
+            <small>扫码后打开抖音举报界面</small>
+          </label>
+          <label class="mode-option">
+            <input type="radio" name="qrMode" value="weibo-jump">
+            <span>微博直跳抖音</span>
+            <small>微博扫码后尽量唤起抖音作品页</small>
+          </label>
+        </div>
 
         <div class="row">
           <div>
-            <label for="videoId">识别到的视频 ID</label>
+            <label for="videoId">识别到的作品 ID</label>
             <input id="videoId" readonly placeholder="生成前会自动识别">
           </div>
           <button id="generateBtn" type="button">生成二维码</button>
@@ -316,17 +372,17 @@
         <p id="error" class="error"></p>
 
         <div class="hint">
-          纯 HTML 页面不能稳定解析 <strong>v.douyin.com</strong> 短链跳转。遇到短链时，先在浏览器或抖音里打开它，再复制跳转后的 <strong>douyin.com/video/数字ID</strong> 链接。
+          微博直跳模式会生成 <strong>snssdk1128://aweme/detail/作品ID</strong>。微博是否直接放行跳转由微博客户端决定；如果被拦截，请换系统相机或抖音扫码。
         </div>
 
         <div class="meta">
           <div>
-            <span>举报类型</span>
-            <strong>video</strong>
+            <span>支持类型</span>
+            <strong>video / note</strong>
           </div>
           <div>
-            <span>页面模式</span>
-            <strong>snssdk1128 webview</strong>
+            <span>直跳模式</span>
+            <strong>snssdk1128 detail</strong>
           </div>
         </div>
       </section>
@@ -337,13 +393,13 @@
         </div>
 
         <div class="actions">
-          <a id="downloadLink" class="button" download="douyin-video-report-qr.svg" href="#" aria-disabled="true">下载二维码</a>
-          <button id="copyBtn" class="secondary" type="button" disabled>复制深链</button>
+          <a id="downloadLink" class="button" download="douyin-qr.svg" href="#" aria-disabled="true">下载二维码</a>
+          <button id="copyBtn" class="secondary" type="button" disabled>复制二维码内容</button>
         </div>
 
         <div class="deep-link-wrap">
           <label for="deepLink">二维码内容</label>
-          <textarea id="deepLink" readonly placeholder="生成后显示完整深链"></textarea>
+          <textarea id="deepLink" readonly placeholder="生成后显示二维码内的完整链接"></textarea>
         </div>
         <div id="toast" class="toast"></div>
       </aside>
@@ -2655,6 +2711,7 @@ var qrcode = function() {
     const REPORT_H5_BASE = `https://api.amemv.com/falcon/fe_douyin_security_react/mortise/${REPORT_MORTISE_ID}/`;
 
     const sourceEl = document.querySelector("#source");
+    const modeEls = document.querySelectorAll("input[name='qrMode']");
     const videoIdEl = document.querySelector("#videoId");
     const generateBtn = document.querySelector("#generateBtn");
     const errorEl = document.querySelector("#error");
@@ -2671,6 +2728,7 @@ var qrcode = function() {
       videoIdEl.value = object ? `${object.objectType}:${object.objectId}` : "";
       clearStatus();
     });
+    modeEls.forEach((modeEl) => modeEl.addEventListener("change", clearStatus));
     generateBtn.addEventListener("click", generate);
     copyBtn.addEventListener("click", copyDeepLink);
     downloadLink.addEventListener("click", (event) => {
@@ -2684,30 +2742,30 @@ var qrcode = function() {
       if (!object) {
         try {
           setBusy(true);
-          toast.textContent = "??????...";
+          toast.textContent = "正在解析短链...";
           const response = await fetch("/api/resolve", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text: sourceEl.value }),
           });
           const payload = await response.json();
-          if (!response.ok || !payload.ok) throw new Error(payload.error || "???????");
+          if (!response.ok || !payload.ok) throw new Error(payload.error || "解析失败");
           object = { objectType: payload.object_type || "video", objectId: payload.object_id || payload.video_id };
           resolvedUrl = payload.resolved_url || "";
         } catch (error) {
           showError(location.protocol === "file:"
-            ? "??????? HTML ????????????????????? http://127.0.0.1:8787/?"
+            ? "当前是本地 HTML 文件，不能自动解析短链。请用 http://127.0.0.1:8787/ 打开工具，或粘贴完整 douyin.com 链接。"
             : error.message);
           setBusy(false);
           return;
         }
       }
-      renderQr(object.objectId, object.objectType, resolvedUrl);
+      renderQr(object.objectId, object.objectType, getQrMode(), resolvedUrl);
       setBusy(false);
     }
 
-    function renderQr(objectId, objectType, resolvedUrl) {
-      currentDeepLink = buildReportDeepLink(objectId, objectType);
+    function renderQr(objectId, objectType, mode, resolvedUrl) {
+      currentDeepLink = buildQrPayload(objectId, objectType, mode);
       currentSvg = makeQrSvg(currentDeepLink);
       videoIdEl.value = `${objectType}:${objectId}`;
       qrBox.innerHTML = currentSvg;
@@ -2717,28 +2775,29 @@ var qrcode = function() {
       if (downloadLink.dataset.url) URL.revokeObjectURL(downloadLink.dataset.url);
       downloadLink.dataset.url = url;
       downloadLink.href = url;
-      downloadLink.download = `douyin-report-${objectType}-${objectId}.svg`;
+      downloadLink.download = `douyin-${mode}-${objectType}-${objectId}.svg`;
       downloadLink.removeAttribute("aria-disabled");
       copyBtn.disabled = false;
-      toast.textContent = resolvedUrl
-        ? `???????${resolvedUrl}`
-        : "?????????? App ????????????????????";
+      const modeMessage = mode === "weibo-jump"
+        ? "已生成微博直跳抖音二维码。微博是否直接放行跳转取决于微博客户端。"
+        : "已生成举报页面二维码。扫码后仍需要手动选择举报理由并提交。";
+      toast.textContent = resolvedUrl ? `${modeMessage} 已解析：${resolvedUrl}` : modeMessage;
     }
 
     function setBusy(isBusy) {
       generateBtn.disabled = isBusy;
-      generateBtn.textContent = isBusy ? "???..." : "?????";
+      generateBtn.textContent = isBusy ? "生成中..." : "生成二维码";
     }
 
     async function copyDeepLink() {
       if (!currentDeepLink) return;
       try {
         await navigator.clipboard.writeText(currentDeepLink);
-        toast.textContent = "??????";
+        toast.textContent = "已复制二维码内容";
       } catch {
         deepLinkEl.focus();
         deepLinkEl.select();
-        toast.textContent = "?????????????????";
+        toast.textContent = "浏览器不允许自动复制，请手动复制文本框内容";
       }
     }
 
@@ -2751,6 +2810,10 @@ var qrcode = function() {
     function showError(message) {
       errorEl.textContent = message;
       errorEl.style.display = "block";
+    }
+
+    function getQrMode() {
+      return document.querySelector("input[name='qrMode']:checked")?.value || "report";
     }
 
     function extractVideoId(input) {
@@ -2769,8 +2832,8 @@ var qrcode = function() {
     }
 
     function buildReportDeepLink(objectId, objectType = "video") {
-      if (!/^\d{16,22}$/.test(String(objectId))) throw new Error("?? ID ??? 16 ? 22 ????");
-      if (!["video", "note"].includes(objectType)) throw new Error("??? video ? note?");
+      if (!/^\d{16,22}$/.test(String(objectId))) throw new Error("作品 ID 必须是 16 到 22 位数字");
+      if (!["video", "note"].includes(objectType)) throw new Error("类型必须是 video 或 note");
       const reportH5 = `${REPORT_H5_BASE}?report_type=${objectType}&object_id=${objectId}&enter_from=aweme_reflow&hide_nav_bar=1&should_full_screen=1`;
       const params = [
         ["refer", "web"], ["from", "webview"], ["from_ssr", "1"], ["from_aid", "1128"],
@@ -2781,6 +2844,16 @@ var qrcode = function() {
         ["hide_nav_bar", "1"], ["should_full_screen", "1"], ["enter_from", "aweme_reflow"],
       ];
       return `snssdk1128://webview?${params.map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join("&")}`;
+    }
+
+    function buildWeiboJumpDeepLink(objectId) {
+      if (!/^\d{16,22}$/.test(String(objectId))) throw new Error("作品 ID 必须是 16 到 22 位数字");
+      return `snssdk1128://aweme/detail/${objectId}`;
+    }
+
+    function buildQrPayload(objectId, objectType, mode) {
+      if (mode === "weibo-jump") return buildWeiboJumpDeepLink(objectId);
+      return buildReportDeepLink(objectId, objectType);
     }
 
     function makeQrSvg(text) {
