@@ -4,6 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node test-vercel.mjs"
+    "test": "node test-vercel.mjs && node test-edgeone.mjs"
   }
 }

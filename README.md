@@ -1,31 +1,60 @@
 # 抖音举报二维码生成器
 
-这是一个可部署到 Vercel 的小型 Web 工具。
-
-功能：
+这是一个小型 Web 工具：
 
 - 粘贴抖音分享文本或短链。
 - 自动解析 `v.douyin.com` 跳转。
 - 支持视频作品 `/video/数字ID` 和图文作品 `/note/数字ID`。
-- 生成打开举报界面的二维码。
+- 生成打开抖音举报界面的二维码。
 
-## Vercel 部署
+## 腾讯 EdgeOne Pages 部署
 
-1. 把本项目推送到 GitHub。
-2. 打开：
+1. 打开：
 
 ```text
-https://vercel.com/new
+https://pages.edgeone.ai/
 ```
 
-3. 选择 GitHub 仓库 `2847422143/douyin-report-qr`。
-4. Framework Preset 选择 `Other`。
-5. 直接 Deploy。
-
-部署成功后，Vercel 会给一个固定链接，例如：
+2. 登录后选择新建项目，选择“导入 Git 仓库”。
+3. 选择 GitHub 仓库：
 
 ```text
-https://douyin-report-qr.vercel.app
+2847422143/douyin-report-qr
+```
+
+4. 构建配置建议如下：
+
+```text
+Framework Preset: Other
+Build Command: npm test
+Output Directory: .
+Root Directory: /
+```
+
+如果页面要求“安装命令”，填：
+
+```text
+npm install
+```
+
+如果不想部署时跑测试，也可以把 Build Command 留空。
+
+5. 点击部署。部署完成后，EdgeOne Pages 会给一个公网 HTTPS 地址。
+
+## 项目结构
+
+```text
+index.html                         EdgeOne Pages 首页
+cloud-functions/api/resolve.js      EdgeOne Pages 短链解析接口
+public/index.html                   Vercel 兼容首页
+api/resolve.js                      Vercel 兼容接口
+app/server.py                       本地 Python 服务器
+```
+
+## 本地测试
+
+```powershell
+npm test
 ```
 
 ## 本地运行 Python 版本
