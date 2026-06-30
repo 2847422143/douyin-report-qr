@@ -2750,7 +2750,11 @@ var qrcode = function() {
           });
           const payload = await response.json();
           if (!response.ok || !payload.ok) throw new Error(payload.error || "解析失败");
-          object = { objectType: payload.object_type || "video", objectId: payload.object_id || payload.video_id };
+          object = {
+            objectType: payload.object_type || "video",
+            objectId: payload.object_id || payload.video_id,
+            secOwnerId: payload.sec_owner_id || "",
+          };
           resolvedUrl = payload.resolved_url || "";
         } catch (error) {
           showError(location.protocol === "file:"
@@ -2760,12 +2764,12 @@ var qrcode = function() {
           return;
         }
       }
-      renderQr(object.objectId, object.objectType, getQrMode(), resolvedUrl);
+      renderQr(object.objectId, object.objectType, getQrMode(), resolvedUrl, object.secOwnerId || "");
       setBusy(false);
     }
 
-    function renderQr(objectId, objectType, mode, resolvedUrl) {
-      currentDeepLink = buildQrPayload(objectId, objectType, mode);
+    function renderQr(objectId, objectType, mode, resolvedUrl, secOwnerId = "") {
+      currentDeepLink = buildQrPayload(objectId, objectType, mode, secOwnerId);
       currentSvg = makeQrSvg(currentDeepLink);
       videoIdEl.value = `${objectType}:${objectId}`;
       qrBox.innerHTML = currentSvg;
@@ -2781,7 +2785,8 @@ var qrcode = function() {
       const modeMessage = mode === "weibo-jump"
         ? "已生成微博直跳举报页二维码。微博是否直接放行跳转取决于微博客户端。"
         : "已生成举报页面二维码。扫码后仍需要手动选择举报理由并提交。";
-      toast.textContent = resolvedUrl ? `${modeMessage} 已解析：${resolvedUrl}` : modeMessage;
+      const ownerMessage = secOwnerId ? "已带入作者加密 ID。" : "未拿到作者加密 ID，若无法打开举报页，请粘贴抖音分享短链重新生成。";
+      toast.textContent = resolvedUrl ? `${modeMessage} ${ownerMessage} 已解析：${resolvedUrl}` : `${modeMessage} ${ownerMessage}`;
     }
 
     function setBusy(isBusy) {
@@ -2831,10 +2836,18 @@ var qrcode = function() {
       return null;
     }
 
-    function buildReportDeepLink(objectId, objectType = "video") {
+    function buildReportDeepLink(objectId, objectType = "video", secOwnerId = "") {
       if (!/^\d{16,22}$/.test(String(objectId))) throw new Error("作品 ID 必须是 16 到 22 位数字");
       if (!["video", "note"].includes(objectType)) throw new Error("类型必须是 video 或 note");
-      const reportH5 = `${REPORT_H5_BASE}?report_type=${objectType}&object_id=${objectId}&enter_from=aweme_reflow&hide_nav_bar=1&should_full_screen=1`;
+      const reportParams = [
+        ["report_type", objectType],
+        ["object_id", objectId],
+        ...(secOwnerId ? [["sec_owner_id", secOwnerId]] : []),
+        ["enter_from", "aweme_reflow"],
+        ["hide_nav_bar", "1"],
+        ["should_full_screen", "1"],
+      ];
+      const reportH5 = `${REPORT_H5_BASE}?${reportParams.map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join("&")}`;
       const params = [
         ["refer", "web"], ["from", "webview"], ["from_ssr", "1"], ["from_aid", "1128"],
         ["app", "aweme"], ["scene_from", "share_reflow"], ["host", "www.iesdouyin.com"],
@@ -2846,13 +2859,13 @@ var qrcode = function() {
       return `snssdk1128://webview?${params.map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join("&")}`;
     }
 
-    function buildWeiboReportDeepLink(objectId, objectType = "video") {
-      return buildReportDeepLink(objectId, objectType);
+    function buildWeiboReportDeepLink(objectId, objectType = "video", secOwnerId = "") {
+      return buildReportDeepLink(objectId, objectType, secOwnerId);
     }
 
-    function buildQrPayload(objectId, objectType, mode) {
-      if (mode === "weibo-jump") return buildWeiboReportDeepLink(objectId, objectType);
-      return buildReportDeepLink(objectId, objectType);
+    function buildQrPayload(objectId, objectType, mode, secOwnerId = "") {
+      if (mode === "weibo-jump") return buildWeiboReportDeepLink(objectId, objectType, secOwnerId);
+      return buildReportDeepLink(objectId, objectType, secOwnerId);
     }
 
     function makeQrSvg(text) {

@@ -5,6 +5,10 @@ assert.deepEqual(
   __test__.extractObject("https://www.douyin.com/note/7654811955592898930?previous_page=app_code_link"),
   { object_type: "note", object_id: "7654811955592898930" },
 );
+assert.equal(
+  __test__.extractSecOwnerIdFromHtml('"author":{"sec_uid":"MS4wLjABAAAArdo4ql4bGt7Wfdyvr1N_qtKw5ad0coSlSGuXznCaPjE"}'),
+  "MS4wLjABAAAArdo4ql4bGt7Wfdyvr1N_qtKw5ad0coSlSGuXznCaPjE",
+);
 
 const response = await edgeOnRequest({
   request: new Request("https://example.com/api/resolve", {

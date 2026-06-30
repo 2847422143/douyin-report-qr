@@ -23,17 +23,40 @@ function extractObject(text) {
   return { object_type: match[1] || match[2], object_id: match[3] };
 }
 
+function extractSecOwnerIdFromHtml(html) {
+  const match = /"sec_uid"\s*:\s*"([^"]+)"/.exec(String(html || ""));
+  return match ? match[1] : null;
+}
+
+async function fetchShareMetadata(url) {
+  const response = await fetch(url, {
+    redirect: "follow",
+    headers: {
+      "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    },
+  });
+  const html = await response.text();
+  return {
+    resolved_url: response.url,
+    object: extractObject(response.url) || extractObject(html),
+    sec_owner_id: extractSecOwnerIdFromHtml(html),
+  };
+}
+
 async function resolveObject(text) {
   const direct = extractObject(text);
-  if (direct) {
+  const firstUrl = extractFirstUrl(text);
+  if (direct && !firstUrl) {
     return {
       ...direct,
       video_id: direct.object_type === "video" ? direct.object_id : null,
       resolved_url: text,
+      sec_owner_id: null,
     };
   }
 
-  const shortUrl = extractFirstUrl(text);
+  const shortUrl = firstUrl;
   if (!shortUrl) throw new Error("没有找到链接。");
 
   const host = new URL(shortUrl).hostname;
@@ -41,25 +64,19 @@ async function resolveObject(text) {
     throw new Error("只支持抖音链接。");
   }
 
-  const response = await fetch(shortUrl, {
-    redirect: "follow",
-    headers: {
-      "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    },
-  });
-  const resolvedUrl = response.url;
-  const resolved = extractObject(resolvedUrl);
+  const metadata = await fetchShareMetadata(shortUrl);
+  const resolved = direct || metadata.object;
   if (!resolved) throw new Error("短链已打开，但没有在跳转地址里找到 video 或 note ID。");
 
   return {
     ...resolved,
     video_id: resolved.object_type === "video" ? resolved.object_id : null,
-    resolved_url: resolvedUrl,
+    resolved_url: metadata.resolved_url,
+    sec_owner_id: metadata.sec_owner_id,
   };
 }
 
-export default async function onRequest(context) {
+async function onRequest(context) {
   const { request } = context;
 
   if (request.method !== "POST") {
@@ -75,4 +92,6 @@ export default async function onRequest(context) {
   }
 }
 
-export const __test__ = { extractFirstUrl, extractObject, resolveObject };
+export default onRequest;
+export { onRequest };
+export const __test__ = { extractFirstUrl, extractObject, extractSecOwnerIdFromHtml, resolveObject };
