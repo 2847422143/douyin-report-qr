@@ -17,18 +17,17 @@ function buildReportDeepLink(objectId, objectType = "video") {
   return `snssdk1128://webview?${params.map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join("&")}`;
 }
 
-function buildWeiboJumpDeepLink(objectId) {
-  if (!/^\d{16,22}$/.test(String(objectId))) throw new Error("ID must be 16 to 22 digits");
-  return `snssdk1128://aweme/detail/${objectId}`;
+function buildWeiboReportDeepLink(objectId, objectType = "video") {
+  return buildReportDeepLink(objectId, objectType);
 }
 
-assert.equal(
-  buildWeiboJumpDeepLink("7654816343196392294"),
-  "snssdk1128://aweme/detail/7654816343196392294",
-);
 assert.match(
   buildReportDeepLink("7654811955592898930", "note"),
   /report_type%3Dnote%26object_id%3D7654811955592898930/,
 );
+const weiboReportLink = buildWeiboReportDeepLink("7654816343196392294", "video");
+assert.match(weiboReportLink, /^snssdk1128:\/\/webview\?/);
+assert.match(weiboReportLink, /report_type%3Dvideo%26object_id%3D7654816343196392294/);
+assert.doesNotMatch(weiboReportLink, /aweme\/detail/);
 
 console.log("deeplink core tests passed");

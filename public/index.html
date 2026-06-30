@@ -338,7 +338,7 @@
     <header>
       <div>
         <h1>抖音二维码生成器</h1>
-        <p class="subtle">输入完整作品链接或作品 ID，生成举报页面二维码或微博直跳抖音二维码。</p>
+        <p class="subtle">输入完整作品链接或作品 ID，生成抖音举报界面二维码。</p>
       </div>
     </header>
 
@@ -356,8 +356,8 @@
           </label>
           <label class="mode-option">
             <input type="radio" name="qrMode" value="weibo-jump">
-            <span>微博直跳抖音</span>
-            <small>微博扫码后尽量唤起抖音作品页</small>
+            <span>微博直跳举报页</span>
+            <small>微博扫码后尽量直接唤起抖音举报界面</small>
           </label>
         </div>
 
@@ -372,7 +372,7 @@
         <p id="error" class="error"></p>
 
         <div class="hint">
-          微博直跳模式会生成 <strong>snssdk1128://aweme/detail/作品ID</strong>。微博是否直接放行跳转由微博客户端决定；如果被拦截，请换系统相机或抖音扫码。
+          微博直跳举报页会生成抖音举报 WebView 深链。微博是否直接放行跳转由微博客户端决定；如果被拦截，请换系统相机或抖音扫码。
         </div>
 
         <div class="meta">
@@ -382,7 +382,7 @@
           </div>
           <div>
             <span>直跳模式</span>
-            <strong>snssdk1128 detail</strong>
+            <strong>snssdk1128 webview</strong>
           </div>
         </div>
       </section>
@@ -2779,7 +2779,7 @@ var qrcode = function() {
       downloadLink.removeAttribute("aria-disabled");
       copyBtn.disabled = false;
       const modeMessage = mode === "weibo-jump"
-        ? "已生成微博直跳抖音二维码。微博是否直接放行跳转取决于微博客户端。"
+        ? "已生成微博直跳举报页二维码。微博是否直接放行跳转取决于微博客户端。"
         : "已生成举报页面二维码。扫码后仍需要手动选择举报理由并提交。";
       toast.textContent = resolvedUrl ? `${modeMessage} 已解析：${resolvedUrl}` : modeMessage;
     }
@@ -2846,13 +2846,12 @@ var qrcode = function() {
       return `snssdk1128://webview?${params.map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join("&")}`;
     }
 
-    function buildWeiboJumpDeepLink(objectId) {
-      if (!/^\d{16,22}$/.test(String(objectId))) throw new Error("作品 ID 必须是 16 到 22 位数字");
-      return `snssdk1128://aweme/detail/${objectId}`;
+    function buildWeiboReportDeepLink(objectId, objectType = "video") {
+      return buildReportDeepLink(objectId, objectType);
     }
 
     function buildQrPayload(objectId, objectType, mode) {
-      if (mode === "weibo-jump") return buildWeiboJumpDeepLink(objectId);
+      if (mode === "weibo-jump") return buildWeiboReportDeepLink(objectId, objectType);
       return buildReportDeepLink(objectId, objectType);
     }
 
