@@ -3,3 +3,8 @@
 .env
 .wrangler/
 node_modules/
+
+# Android generated/local files
+**/build/
+**/.gradle/
+**/local.properties

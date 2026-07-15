@@ -47,7 +47,49 @@ cloud-functions/api/resolve.js      Cloud Functions 兼容接口
 public/index.html                   Vercel 兼容首页
 api/resolve.js                      Vercel 兼容接口
 app/server.py                       本地 Python 服务器
+android/douyin-report-android       Android 用户端 APK 源码
+android/douyin-report-admin-android Android 管理端 APK 源码
+release/                            最新 APK、源码包、Supabase 部署说明
 ```
+
+## Android 双 APK 版本
+
+仓库已包含 Android 原生 Java 版本：
+
+- 用户端包名：`com.example.douyinreportqr`
+- 管理端包名：`com.example.douyinreportadmin`
+- 用户端 APK：`release/douyin-report-qr-android-debug.apk`
+- 管理端 APK：`release/douyin-report-admin-android-debug.apk`
+- 完整复刻说明：`release/douyin-report-apk-full-rebuild-guide.md`
+- 完整源码压缩包：`release/douyin-report-apk-full-project-source.zip`
+
+用户端功能：
+
+- 输入抖音分享文本或链接。
+- 自动识别视频作品和图文作品。
+- 生成打开抖音举报界面的二维码。
+- 支持复制、保存二维码、尝试打开抖音。
+- 接入 Supabase 远程开关和设备登记。
+
+管理端功能：
+
+- 查看已经登记的设备。
+- 全局开启/暂停生成。
+- 单独控制某台设备。
+- 一键全部暂停、一键全部开启、清空单独配置。
+- 删除设备记录。
+- 支持超过 10 台设备后，新设备默认禁用。
+
+Android 构建示例：
+
+```powershell
+$env:JAVA_HOME='D:\JDK17'
+$env:Path='D:\JDK17\bin;' + $env:Path
+.\work\gradle-8.11.1\bin\gradle.bat -p .\android\douyin-report-android assembleDebug
+.\work\gradle-8.11.1\bin\gradle.bat -p .\android\douyin-report-admin-android assembleDebug
+```
+
+如果没有仓库外部的 `work\gradle-8.11.1`，也可以用本机已安装的 Gradle/Android Studio 打开 `android/` 下两个项目分别构建。
 
 ## 本地测试
 
