@@ -1,86 +1,108 @@
-# 抖音举报二维码生成器
+# 抖音举报二维码 Android 双 APK
 
-这是一个小型 Web 工具：
+这是一个 Android 原生 Java 双 APK 项目：
 
-- 粘贴抖音分享文本或短链。
-- 自动解析 `v.douyin.com` 跳转。
-- 支持视频作品 `/video/数字ID` 和图文作品 `/note/数字ID`。
-- 生成打开抖音举报界面的二维码。
-- 生成微博扫码后尽量直跳抖音举报界面的二维码。
+- **用户端 APK**：输入抖音分享文本或链接，生成打开抖音举报界面的二维码。
+- **管理端 APK**：查看已安装设备，远程控制全局开关或单台设备开关。
 
-## 腾讯 EdgeOne Pages 部署
+旧的 HTML / EdgeOne / Vercel / Python 网页方案已经移除，本仓库只保留 Android APK 方案。
 
-1. 打开：
+## APK 下载
 
-```text
-https://pages.edgeone.ai/
-```
-
-2. 登录后选择新建项目，选择“导入 Git 仓库”。
-3. 选择 GitHub 仓库：
+最新 debug APK 位于：
 
 ```text
-2847422143/douyin-report-qr
+release/douyin-report-qr-android-debug.apk
+release/douyin-report-admin-android-debug.apk
 ```
 
-4. 构建配置建议如下：
+完整源码压缩包：
 
 ```text
-Framework Preset: Other
-Build Command: 留空
-Output Directory: .
-Root Directory: /
+release/douyin-report-apk-full-project-source.zip
 ```
 
-如果页面要求“安装命令”，也留空。
+完整复刻说明：
 
-这个项目是静态首页加 Edge Functions，不需要构建步骤。
+```text
+release/douyin-report-apk-full-rebuild-guide.md
+```
 
-5. 点击部署。部署完成后，EdgeOne Pages 会给一个公网 HTTPS 地址。
+Supabase 云端说明：
+
+```text
+release/supabase-device-control-usage.md
+```
 
 ## 项目结构
 
 ```text
-index.html                         EdgeOne Pages 首页
-edge-functions/api/resolve.js       EdgeOne Pages 短链解析接口
-cloud-functions/api/resolve.js      Cloud Functions 兼容接口
-public/index.html                   Vercel 兼容首页
-api/resolve.js                      Vercel 兼容接口
-app/server.py                       本地 Python 服务器
-android/douyin-report-android       Android 用户端 APK 源码
-android/douyin-report-admin-android Android 管理端 APK 源码
-release/                            最新 APK、源码包、Supabase 部署说明
+android/
+  douyin-report-android/             用户端 Android 项目
+  douyin-report-admin-android/       管理端 Android 项目
+
+release/
+  douyin-report-qr-android-debug.apk
+  douyin-report-admin-android-debug.apk
+  douyin-report-apk-full-project-source.zip
+  douyin-report-apk-full-rebuild-guide.md
+  supabase-device-control-usage.md
 ```
 
-## Android 双 APK 版本
+## 用户端
 
-仓库已包含 Android 原生 Java 版本：
+包名：
 
-- 用户端包名：`com.example.douyinreportqr`
-- 管理端包名：`com.example.douyinreportadmin`
-- 用户端 APK：`release/douyin-report-qr-android-debug.apk`
-- 管理端 APK：`release/douyin-report-admin-android-debug.apk`
-- 完整复刻说明：`release/douyin-report-apk-full-rebuild-guide.md`
-- 完整源码压缩包：`release/douyin-report-apk-full-project-source.zip`
+```text
+com.example.douyinreportqr
+```
 
-用户端功能：
+功能：
 
 - 输入抖音分享文本或链接。
 - 自动识别视频作品和图文作品。
 - 生成打开抖音举报界面的二维码。
-- 支持复制、保存二维码、尝试打开抖音。
-- 接入 Supabase 远程开关和设备登记。
+- 支持复制 deeplink。
+- 支持保存二维码图片。
+- 支持尝试直接打开抖音举报页。
+- 自动登记设备到 Supabase。
+- 每 5 秒读取远程配置。
+- 如果云端禁用当前设备，点击生成时显示提示语，不生成二维码。
 
-管理端功能：
+源码：
 
-- 查看已经登记的设备。
-- 全局开启/暂停生成。
+```text
+android/douyin-report-android
+```
+
+## 管理端
+
+包名：
+
+```text
+com.example.douyinreportadmin
+```
+
+功能：
+
+- 查看已登记设备。
+- 全局开启或暂停生成。
+- 设置全局提示语。
 - 单独控制某台设备。
-- 一键全部暂停、一键全部开启、清空单独配置。
+- 单独设置某台设备提示语。
+- 一键全部暂停。
+- 一键全部开启。
+- 清空所有单独配置。
 - 删除设备记录。
-- 支持超过 10 台设备后，新设备默认禁用。
+- 超过 10 台设备后，新设备默认禁用。
 
-## APK 使用的 Supabase 云端
+源码：
+
+```text
+android/douyin-report-admin-android
+```
+
+## APK 使用的 Supabase
 
 当前 Android 用户端和管理端 APK 都连接同一个 Supabase 项目：
 
@@ -90,56 +112,57 @@ REST API: https://wnaqpyoxpgzvcfupoloe.supabase.co/rest/v1
 Publishable key: sb_publishable_QqLauvy5EGcEPCkEnYqL0Q_gL2YZAZ5
 ```
 
-APK 使用的表：
+使用的表：
 
 - `devices`：登记已安装并打开过用户端的设备。
 - `device_configs`：保存单台设备的单独开关和提示语。
 - `global_config`：保存全局开关和全局提示语。
 
-APK 使用的云端函数和触发器：
+使用的云端函数和触发器：
 
 - `admin_delete_device(target_device_id text, admin_secret text)`：管理端删除设备记录。
 - `trg_limit_new_devices`：新设备超过 10 台后，自动写入禁用配置。
 - 限制提示语：`设备数量受限，暂不能使用`。
 
-完整 Supabase 建表、RLS、RPC、设备数量限制 SQL 在：
+完整 SQL 在：
 
 ```text
 release/supabase-device-control-usage.md
 release/douyin-report-apk-full-rebuild-guide.md
 ```
 
-Android 构建示例：
+## 构建方式
+
+要求：
+
+- JDK 17
+- Android SDK
+- Gradle 或 Android Studio
+- compileSdk 36
+- minSdk 23
+- targetSdk 36
+
+使用 Gradle 构建示例：
 
 ```powershell
-$env:JAVA_HOME='D:\JDK17'
-$env:Path='D:\JDK17\bin;' + $env:Path
-.\work\gradle-8.11.1\bin\gradle.bat -p .\android\douyin-report-android assembleDebug
-.\work\gradle-8.11.1\bin\gradle.bat -p .\android\douyin-report-admin-android assembleDebug
+gradle -p .\android\douyin-report-android assembleDebug
+gradle -p .\android\douyin-report-admin-android assembleDebug
 ```
 
-如果没有仓库外部的 `work\gradle-8.11.1`，也可以用本机已安装的 Gradle/Android Studio 打开 `android/` 下两个项目分别构建。
-
-## 本地测试
-
-```powershell
-npm test
-```
-
-## 本地运行 Python 版本
-
-```powershell
-python app/server.py
-```
-
-打开：
+如果使用 Android Studio，分别打开：
 
 ```text
-http://127.0.0.1:8787/
+android/douyin-report-android
+android/douyin-report-admin-android
 ```
 
-## 注意
+然后执行 `Build APK(s)`。
 
-举报二维码只会打开抖音举报界面，不会自动提交举报。扫码后仍需要手动选择举报理由并提交。
+## 重要说明
 
-微博直跳举报页二维码使用抖音举报 WebView 深链。微博是否直接放行跳转由微博客户端决定，如果被拦截，请换系统相机或抖音扫码。
+- APK 只能安装在 Android 手机上，iPhone 不能安装 `.apk`。
+- 举报二维码只会打开抖音举报界面，不会自动提交举报。
+- 扫码后仍需要用户手动选择举报理由并提交。
+- 抖音 deeplink 和举报 H5 地址属于外部平台行为，抖音未来改规则后可能需要更新。
+- Supabase publishable key 写在 APK 内，用于前端访问 Supabase REST。
+- 管理端删除设备使用 RPC 口令，适合当前轻量项目；如果商业化，建议改成登录鉴权 + Edge Function。
